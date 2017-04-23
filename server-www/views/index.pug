@@ -1,0 +1,163 @@
+extends layout
+
+block body
+  main
+    picture.logo
+      <!--source(srcset='/logo.svg')-->
+      img(src='/logo.png' alt='onetube.io')
+    p.subtitle Media sharing over <a href="http://webtorrent.io" target="_blank">WebTorrent</a> (torrents on the web)
+
+    section#preview.hidden
+      h2 Set your screen name
+      form#peerId
+        input(name='peerName', placeholder='Session Name' required)
+        button(name='nameSubmit', type='submit') Set Once
+
+    section#newSessionSection
+      //h3#idinfo
+      //form#newsession
+        label(for='sessionName') Start New Session
+        input(name='sessionName', placeholder='Session Name' required)
+        label(for='sessionPublic') Public
+        input(name='sessionPublic', type='checkbox')
+        label(for='sessionEditable') Editable
+        input(name='sessionEditable', type='checkbox')
+        //label(for='sessionAutoplay') Auto play
+        //input(name='sessionAutoplay', type='checkbox')
+        button(name='sessionSubmit', type='submit') Launch A Session
+
+      div#insession
+        h3.nowPlaying [offline] :
+          span.songName ...
+          span.upNext  [QUEUE]
+        div#sessionPlayer
+      div#sessionPlaylist
+        //div#upNextPlayingBox.hidden
+        div#sessionPlaylistBox
+          //div#id1.item.seeding
+            span.links
+              a [torrent file]
+              a [save]
+            span.itemTitle A long song name can go here
+            span.stats Stats here
+          //div#id2.item.seeding.nowPlaying
+            span.links
+              a [torrent file]
+              a [save]
+            span.itemTitle Test song name here
+            span.stats Stats here
+          //div#id3.item.downloading
+            span.links
+              a [torrent file]
+              a [save]
+            span.itemTitle Test song name here
+            span.stats Stats here
+          //div#id4.item.added
+            span.links
+              a [torrent file]
+              a [save]
+            span.itemTitle Test song name here
+            span.stats Stats here
+      div#controls
+        div.links
+        div.ranges
+      div#playlistSection
+        div#playlists
+          ul#playlisttabs.pltabs
+            li#newPlaylist.newtab
+              span +
+        div#playlist
+          //div#playlist-myplaylist.playlistFiles
+            div.filelist-item
+              div.filelist-item-thumbnail
+                div.control.playstop
+                div.control.queue
+              span.filelist-item-filename A file title asdadasd asdasdasd asdasdasda asdasdadasd asdadasdasd
+              a(href='#').filelist-item-remove ✖
+              span.filelist-item-info Audio (mpa) 2.3Mb
+              span.filelist-item-stats
+            div.filelist-item.seeding.nowPlaying.queued
+              div.filelist-item-thumbnail
+                div.control.playstop
+                div.control.queue
+              span.filelist-item-filename A second title
+              a(href='#').filelist-item-remove ✖
+              span.filelist-item-info Audio (mpa) 2.3Mb
+              span.filelist-item-stats
+            div.filelist-item.downloading.queued
+              div.filelist-item-thumbnail
+                div.control.playstop
+                div.control.queue
+              span.filelist-item-filename A third title
+              a(href='#').filelist-item-remove ✖
+              span.filelist-item-info Audio (mpa) 2.3Mb
+              span.filelist-item-stats
+            div.filelist-item.added
+                div.filelist-item-thumbnail
+                  div.control.playstop
+                  div.control.queue
+                span.filelist-item-filename A fourth title
+                a(href='#').filelist-item-remove ✖
+                span.filelist-item-info Audio (mpa) 2.3Mb
+                span.filelist-item-stats
+        div#playlistControls
+          | Drag-and-drop to add to playlist. Or
+          | #{ ' ' }
+          input(type='file', name='upload' multiple)
+
+      div#extras
+        div#messages
+        div#users
+        div#messageBar
+          form#messageBarForm
+            input(name='messageBarInput', placeholder='Type message here' required)
+            button(name='messageSubmit', type='submit') Message
+
+        // p.connection This is a connection message
+        // p.command This is a command - Begin Play
+        // p
+        //   span.user From abcdefg
+        //   span.message.private  This is a Private Message
+        // p
+        //   span.user From abcdefg
+        //   span.message  This is a Message to Everyone
+        // p
+        //   span.user From abcdefg
+        //   span.message  please see
+        //     a https://www.youtube.com
+        //     | Is this a good clip?
+        // p.command This is another command
+        // p.logging This is some logging to go in there too
+        // p.error This is some logging error
+        // p.warning This is some logging warning
+        // p.logging This is some logging to go in there too
+        // p.logging This is some logging to go in there too
+        // p.error This is some logging error
+        // p.logging This is some logging to go in there too
+        // p.warning This is some logging warning
+        // p.logging This is some logging to go in there too
+        // p.logging This is some logging to go in there too
+
+      div#mygraph
+
+
+    section#sessionsSection
+      h1 Live Sessions
+        button(style="float:right", name='sessionSubmit', type='submit') Launch a Session
+      div#sessions
+        table#sessionsList
+          tr#sessionsList-headings
+            th Session
+            th Playlist
+            th Peers
+            th Join
+      br
+      form#joinsession
+        label(for='sessionId') Enter Session ID
+        input(name='sessionId', placeholder='ID:')
+        button(name='joinSubmit', type='submit') Join
+        | &nbsp;
+        button(name='scanSubmit', type='submit') Scan QR Code
+
+    footer
+      p: small Powered by <a href="http://webtorrent.io" target="_blank">WebTorrent</a>. Works in Chrome, Firefox, and Opera. Source code available on <a href="https://github.com/feross/instant.io" target="_blank">GitHub</a>, 100% open source, free software. © 2016 WebTorrent, LLC.

@@ -1,0 +1,592 @@
+$color-primary = #F8283B
+$color-secondary = #7D868C
+WHITE = #E1FAFA
+
+*, *:after, *:before
+  box-sizing: border-box
+
+html, body
+  margin: 0
+  padding: 0
+  height: 100%
+  overflow: auto
+
+.drag
+  content: ''
+  background: rgba($color-primary, 0.3)
+  border: 5px $color-primary dashed
+
+main
+  max-width: 800px
+  margin: 0 auto
+  padding: 20px 20px 0
+
+section
+  margin: 30px 0
+
+.logo
+  display: inline-block
+  position: relative
+  margin-bottom: 10px
+
+.logo:after
+  display: inline-block
+  position: absolute
+  top: 0
+  right: -32px
+  font-size: 11px
+  color: #BBB
+  content: 'BETA'
+
+.logo img
+  margin: 0
+  height: 50px
+
+.subtitle
+  margin-top: 0
+  margin-bottom: 20px
+  color: $color-secondary
+
+a:link, a:visited
+  color: $color-primary
+  text-decoration: none
+
+a:hover, a:focus, a:active
+  text-decoration: underline
+
+h1
+  span
+    font-size 16px
+    padding-left 10px
+    font-weight normal
+
+input, button
+  font-size: 16px
+
+input
+  margin-right: 15px
+
+input[name=sessionName],input[name=sessionId],input[name=peerName]
+  width: 300px
+  margin-left: 15px
+
+table
+  table-layout:fixed
+  width: 760px
+
+td,th
+  word-wrap:break-word
+  font-size: 11px
+  text-align: center
+
+.log, .speed
+  font-family: monospace
+  font-size: 14px
+  margin-top: 20px
+
+#mygraph
+  background-color: #2a3749
+  display: block
+  margin-top: 15px
+
+  svg
+    display: block
+
+    .node
+       cursor: pointer
+
+      .text
+        fill: rgba(WHITE, 60%)
+
+.speed:not(:empty)
+  padding: 20px
+  margin: 10px 0
+  background: #EEE
+
+#sessions:not(:empty)
+   padding: 5px
+   background: #EEE
+
+.log p
+  margin: 0
+
+#playlist
+  padding: 10px
+  background-color: #eee
+  position: relative
+
+  .playlistFiles
+
+    .filelist-item
+      //padding: 10px
+      margin: 5px
+      color: #eeeeee
+      font-size: 14px
+      font-family: monospace
+      position: relative
+      height: 40px
+      overflow: hidden
+      background-color: lightgray
+
+      .filelist-item-thumbnail
+        float: left
+        width: 100px
+        height: 40px
+        overflow hidden
+        background-color white
+
+      div.control
+        position: absolute
+        float: left
+        margin-top: 4px
+        margin-left: 13px
+        width: 45px
+        height: 33px
+        overflow hidden
+
+        background-repeat no-repeat
+
+      div.control.playstop
+        left: 0px
+        background-image: url('play.png')
+
+      div.control.queue
+        left: 45px
+        top:3px
+        background-image: url('queue.svg')
+
+      div.playstop:hover
+        background-image: url('play-hover.png')
+
+      div.queue:hover
+        background-image: url('queue-hover.svg')
+
+    .filelist-item.nowPlaying div.control.playstop
+        background-image: url('stop.png')
+
+    .filelist-item.nowPlaying div.control.playstop:hover
+        background-image: url('stop-hover.png')
+
+    .filelist-item.queued div.control.queue
+        background-image: url('unqueue.svg')
+
+    .filelist-item.queued div.control.queue:hover
+        background-image: url('unqueue-hover.svg')
+
+
+      .filelist-item-filename
+        padding-left: 30px
+        padding-top: 11px
+        font-weight : bold
+        max-width: 300px
+        max-height: 30px
+        overflow: hidden
+        display: inline-block
+
+      .filelist-item-info
+        float: right
+        padding-left: 20px
+        padding-top: 11px
+
+      .filelist-item-stats
+        float: right
+        padding-right: 10px
+        padding-top: 11px
+        font-style: italic
+
+      a.filelist-item-remove
+        float: right
+        padding-left: 20px
+        padding-right: 20px
+        padding-top: 11px
+        color: lightsteelblue
+
+    .filelist-item.seeding
+      background-color: darkolivegreen
+
+    .filelist-item.downloading
+      background-color: darkslategrey
+
+    .filelist-item.added
+      background-color: lightgray
+
+
+#playlistControls
+  padding: 10px
+  color: darkslategrey
+
+#session
+  width: 760px
+  display: block
+
+
+#controls
+  width: 760px
+  display: block
+  height: 40px
+  background-color: rgb(3,113,168)
+  text-align : center
+
+  .links
+    float: right
+    margin-top: 10px
+    margin-right: 10px
+    a
+      color: white
+      font-family: monospace
+      margin: 5px
+
+
+  .ranges
+    float: right
+    padding-top: 10px
+    a
+      color: white
+      font-family: monospace
+      margin: 5px
+      vertical-align center
+
+    .range-element input
+      margin-top:10px
+
+    #seek-bar
+      width: 260px
+
+    #volume-bar
+      width: 60px
+
+#extras
+  display: block
+  height:200px
+  width 760px
+
+#messages
+  margin-top: 10px
+  width: 590px
+  overflow: hidden
+  height: 180px
+  padding: 0 10px 0 20px
+  background-color: aliceblue
+  overflow-y: scroll
+  font-family: monospace
+  font-size: 14px
+  float left
+
+  p
+    margin: 0
+    padding: 0
+
+  span
+    margin: 2px
+
+  a
+    padding-left: 5px
+    padding-right: 5px
+    color: darkblue
+
+  .logging
+    color: #333333
+  .command
+    color: darkmagenta
+    font-weight: bolder
+  .user
+    color: darkgreen
+    font-weight : bold
+  .message
+    color: #2a3749
+  .private
+    color: #f8283b
+  .warning
+    color: orangered
+  .error
+    color: darkred
+    font-weight : bold
+
+#users
+  margin-top: 10px
+  width: 160px
+  overflow: hidden
+  height: 180px
+  background-color: lightcyan
+  overflow-y: scroll
+  font-family: monospace
+  font-size: 14px
+  float right
+
+  .user
+    padding: 3px 0 3px 10px
+    margin: 2px
+    font-size: 12px
+    font-family: monospace
+    background-color: darkolivegreen
+    color: white
+
+  .sk
+    background-color: darkslategrey
+  .me
+    background-color: darkgrey
+
+#playlists
+  margin-top 5px
+  margin-bottom: 2px
+
+ul.pltabs
+  list-style-type: none;
+  margin: 0px;
+  padding: 0;
+  overflow: hidden;
+  background-color: #eee;
+
+ul.pltabs li
+  float: left
+  margin-right: 5px
+  min-width: 95px
+  text-align center
+  background-color #ccc
+  position: relative
+  cursor move
+
+  span:hover
+    background-color: #666
+    min-width: 95
+    cursor move
+
+ul.pltabs li.active span:hover
+  background-color: steelblue
+  cursor move
+
+ul.pltabs li span
+  display: inline-block
+  text-align: center
+  padding: 15px 50px 15px 15px
+  text-decoration: none
+  transition: 0.3s
+  font-size: 12px
+  font-family: monospace
+  overflow:hidden
+  color: white
+  cursor move
+
+a.playlist-remove
+    position: absolute
+    font-size: 10px
+    top: 0px
+    right: 0px
+    padding-right:2px
+    padding-top:1px
+    padding-left:2px
+    color: #999
+    background-color : #eee
+
+a.playlist-remove:hover
+  color #111
+  font-weight: bolder
+  cursor pointer
+
+.playlist-load
+  position: absolute
+  top: 12px
+  right: 18px
+  width: 20px
+  height: 20px
+  overflow hidden
+  background-image: url('load.svg')
+  background-repeat: no-repeat
+
+.playlist-load:hover
+  cursor pointer
+  background-image: url('load-hover.svg')
+
+li.inSession div.playlist-load
+  background-image: url('unload.svg')
+li.inSession div.playlist-load:hover
+  background-image: url('unload-hover.svg')
+
+ul.pltabs li.inSession
+  background: mediumpurple
+ul.pltabs li.inSession.active
+  background: rebeccapurple
+ul.pltabs li.active
+  background: #0371a8
+
+
+ul.pltabs li.newtab
+  min-width: 45px
+ul.pltabs li.newtab span
+  min-width: 45px
+  padding: 12px 12px 12px 12px
+ul.pltabs li.newtab span:hover
+  min-width: 45px
+
+
+ul.pltabs li span:hover
+    min-width: 95px
+
+ul.pltabs li.inSession span
+    color: white
+ul.pltabs li.active span
+  color: white
+
+//.playlistFiles
+//  display: none
+//  -webkit-animation: fadeEffect 1s
+//  animation: fadeEffect 1s
+
+@-webkit-keyframes fadeEffect
+  from opacity 0
+  to opacity 1
+
+@keyframes fadeEffect
+  from opacity 0
+  to opacity 1
+
+#messageBar
+  width 760px
+  clear: both
+  position: relative
+
+  button[name=messageSubmit]
+    position: absolute
+    right 0
+    top 0
+
+  input[name=messageBarInput]
+    width 100%
+    position: absolute
+    left 0
+    top 0
+
+#sessionPlaylist
+  width: 200px
+  height: 290px
+  background-color: #dddddd
+  overflow: hidden
+  border: 1px solid #666666
+  position: relative
+
+#sessionPlaylistBox
+  position: absolute
+  top: 0px
+  left: 0px
+  -webkit-transition: top 0.25s ease-in-out
+  -moz-transition: top 0.25s ease-in-out
+  -ms-transition: top 0.25s ease-in-out
+  -o-transition: top 0.25s ease-in-out
+  transition: top 0.25s ease-in-out
+
+
+//  No longer needed
+#upNextPlayingBox
+  width: 198px
+  height: 55px
+  position: absolute
+  background-color: darkblue
+  opacity: 0.3
+  top 1
+  left 1
+  z-index 100
+
+.item
+  padding: 5px
+  width: 189px
+  height: 66px
+  margin: 5px 0px 5px 5px
+  background-color: #999
+  font-size: 12px
+  white-space: nowrap
+  overflow: hidden
+  display: block
+  position:  relative
+  color: #eeeeee
+
+  .itemTitle
+    margin-top: 20px
+    padding-left: 5px
+    color: white
+    display: block
+    font-weight: bold
+
+  .links
+    display: block
+    float: right
+
+    a
+      color: #eee
+      margin-left: 10px
+      font-style: bold
+
+
+  .stats
+    position: absolute
+    right: 5px
+    bottom:5px
+
+div.seeding
+  background-color: #2f612a
+
+div.downloading
+  background-color: darkslategrey
+
+div.added
+  background-color: gray
+
+div.nowPlaying
+  background-color: #0371a8 !important
+
+
+.sortable-ghost
+  background-color purple
+  opacity 0.4
+
+.sortable-chosen
+  background-color purple
+
+.sortable-drag
+  background-color purple
+
+
+.hidden
+  display: none
+
+.songName
+  padding-left: 10px
+  color: lightslategray
+  font-style: italic
+
+
+h3.nowPlaying
+  color: red
+  font-family: monospace
+
+.upNext
+  float right
+  padding-right 20px
+  color: darkred
+
+footer
+  margin: 20px 0
+  font-size: 0.8em
+  color: $color-secondary
+
+#sessionPlayer
+  width: 560px
+  height: 290px
+  background-color: black
+  background-image: url("not-loaded.png")
+  background-repeat no-repeat
+  float: left
+  background-position center
+
+  audio, video, img
+    display: block
+    max-width: 560px
+    max-height: 290px
+    background-color: black
+    width: 100%
+    height: 100%
+
+#sessionPlayer.loaded
+  background-image: url('audio.gif')
+  background-color: white
+
+

@@ -1,0 +1,64 @@
+{
+  "name": "onetube.io",
+  "description": "Secure, anonymous, streaming file transfer",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jordan Rancie"
+  },
+  "dependencies": {
+    "bittorrent-tracker": "^8.0.13",
+    "browserify": "^13.0.0",
+    "compression": "^1.0.9",
+    "cors": "^2.7.1",
+    "create-torrent": "^3.25.2",
+    "debug": "^2.0.0",
+    "dependency-tree": "^5.7.5",
+    "downgrade": "^1.0.0",
+    "drag-drop": "^2.0.0",
+    "express": "^4.8.5",
+    "inherits": "^2.0.1",
+    "moment": "^2.15.1",
+    "prettier-bytes": "^1.0.3",
+    "pug": "^2.0.0-beta3",
+    "run-parallel": "^1.0.0",
+    "stylus": "^0.54.0",
+    "throttleit": "^1.0.0",
+    "thunky": "^1.0.0",
+    "twilio": "^2.9.2",
+    "unlimited": "^1.1.0",
+    "upload-element": "^1.0.1",
+    "webtorrent": "0.x",
+    "xhr": "^2.0.0",
+    "p2p-graph": "^1.0.1",
+    "simple-get": "^2.0.0",
+    "simple-peer": "^6.0.0",
+    "sortablejs": "^1.5.0-rc1",
+    "peerjs": "^0.3.14",
+    "peer": "^0.2.8"
+  },
+  "devDependencies": {
+    "nodemon": "^1.2.1",
+    "standard": "*",
+    "watchify": "^3.1.0"
+  },
+  "homepage": "http://feross.org",
+  "keywords": [
+    "data channel",
+    "file transfer",
+    "p2p",
+    "webrtc"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "build": "npm run build-css && npm run build-js",
+    "build-css": "stylus css/main.styl -o static/ -c",
+    "build-js": "browserify client > static/bundle.js",
+    "start-www": "npm run build && node server-www",
+    "start-api": "node server-api",
+    "json-analyse": "node tools",
+    "watch-js": "watchify client -o static/bundle.js -dv",
+    "watch-css": "stylus css/main.styl -o static/ -w"
+  }
+}
