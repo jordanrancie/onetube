@@ -1,7 +1,8 @@
 node_modules
-
 secret/*
 !secret/index-sample.js
-
+.idea
+.idea/*
+.idea/**
 static/main.css
 static/bundle.js

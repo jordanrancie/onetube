@@ -54,7 +54,8 @@ var IMAGE = [
 ]
 
 
-var sessionServer = "127.0.0.1"
+var sessionServer = "onetube.io"
+var sessionServerPort = "9101"
 // Redefine the AnnounceLIst to use only our server
 createTorrent.announceList = [
 	//[ 'udp://tracker.openbittorrent.com:80' ],
@@ -65,7 +66,7 @@ createTorrent.announceList = [
 	//[ 'wss://tracker.btorrent.xyz' ],
 	//[ 'wss://tracker.openwebtorrent.com' ],
 	//[ 'wss://tracker.fastcast.nz' ]
-	[ 'ws://' + sessionServer + ':8000' ]
+	[ 'ws://' + sessionServer + ':' + sessionServerPort ]
 ]
 
 //localStorage.debug = 'render-media'
@@ -74,7 +75,6 @@ var player = {}
 
 var playlists = {}
 var activePlaylist = {}
-var inSessionPlaylist = {}
 
 var torrents = {}
 var files = {}
@@ -118,8 +118,7 @@ var getClient = thunky(function (cb) {
 		var opts = {
 			tracker: {
 				rtcConfig: rtcConfig
-			},
-			dht: true
+			}
 		}
 
 		//if (peerId !== '')
@@ -130,7 +129,7 @@ var getClient = thunky(function (cb) {
 		torrentClient.on('warning', onWarning)
 		torrentClient.on('error', onError)
 
-		//logAllEmitterEvents(torrentClient)
+		logAllEmitterEvents(torrentClient)
 
 		cb(null, torrentClient)
 	})
@@ -148,7 +147,7 @@ var getClient = thunky(function (cb) {
 //// TODO PRO VERSION
 // TODO - handle both private and public session use cases - also updated Sessions
 // TODO - Youtube, soundclound, spotify
-// TODO - Drive, Drppbox and OneDrive
+// TODO - Drive, Dropbox and OneDrive
 // TODO - Facebook, Google and Twitter integration
 // TODO - Share with friends
 // TODO - QR Scan and 'load by link'
@@ -374,7 +373,7 @@ function joinSession(key) {
 		session.on('playlistItemTorrentLoading', _onPlaylistItemTorrentLoading)
 		session.on('playlistItemTorrentSeeding', _onPlaylistItemTorrentSeeding)
 
-		session.joinSession()
+		session.joinSession(player)
 
 	} else {
 		joinPrivateSession(key)
@@ -508,7 +507,7 @@ function _onPeerJoined(peer) {
 	sessionPeersTable.appendChild(user)
 
 	if (peer.peerId !== peerId)
-		util.userCommand(peer.alias + ' is in session. Loading playlist. Please wait...')
+		util.userCommand(peer.alias + ' is now in session')
 
 }
 
@@ -676,10 +675,20 @@ function _onPlaylistItemTorrentLoading(playlistItem) {
 		var itemEl = document.getElementById(item.playlistItemId)
 		itemEl.classList.remove("added")
 		itemEl.classList.add("downloading")
-		player.itemDownloading(item)
 	} catch (e) {
 		util.error('Error setting ' + item.id + ' to state \'Downloading\'')
 	}
+
+	if(playlistItem.queueId) {
+		try {
+			var el = document.getElementById(playlistItem.queueId)
+			if (el) {
+				el.classList.add('downloading')
+				el.classList.remove('added')
+			}
+		} catch(e) {}
+	}
+
 }
 
 function _onPlaylistItemTorrentSeeding(playlistItem) {
@@ -695,12 +704,22 @@ function _onPlaylistItemTorrentSeeding(playlistItem) {
 		itemEl.classList.remove("downloading")
 		itemEl.classList.remove("added")
 		itemEl.classList.add("seeding")
-		player.itemSeeding(item)
 	} catch (e) {
 		util.error('Error setting ' + item.id + ' to state \'Seeding\'')
 	}
+
+	if(playlistItem.queueId) {
+		try {
+			var el = document.getElementById(playlistItem.queueId)
+			if (el) {
+				el.classList.add('seeding')
+				el.classList.remove('downloading')
+			}
+		} catch(e) {}
+	}
 }
 
+// TODO - Note used yet
 function _onPlaylistUpdated(playlist) {
 	var pl
 	if (playlist instanceof Event)
@@ -779,7 +798,7 @@ function addPlaylistFiles (newFiles) {
 			author: peerId,
 			originalFile: file,
 			type: type,
-			// TO be set later
+			// To be set later
 			state: 'added',
 			file: {},
 			torrent: {},
@@ -833,8 +852,6 @@ function addPlaylistFiles (newFiles) {
 			files[newItem.id] = {}
 
 		files[newItem.id][newItem.playlistItemId] = newItem
-
-		var length = activePlaylist.playlist.length
 
 		// Adding to active playlist
 		activePlaylist.playlist.push(newItem)
@@ -904,7 +921,7 @@ function removePlaylistFile(item) {
 function scanOpenSessions() {
 	try {
 		get.concat({
-			url: 'http://' + sessionServer + ':8000/sessions',
+			url: 'http://' + sessionServer + ':' + sessionServerPort + '/sessions',
 			method: 'GET',
 			headers: {'user-agent': 'WebTorrent/1.0 (https://webtorrent.io)'}
 		}, onResponse)
@@ -1092,15 +1109,11 @@ function newPlaylist(name, fixed) {
 	loadunload.addEventListener('click', function(e) {
 		e.preventDefault()
 		if(newPlTab.classList.contains('inSession')) {
-			player.unlinkPlaylist(playlists[id])
+			player.dequeueAll(playlists[id].playlist)
 			newPlTab.classList.remove('inSession')
 		} else {
+			player.queueAll(playlists[id].playlist)
 			newPlTab.classList.add('inSession')
-
-			if(player.linkPlaylist.id)
-				player.linkedPlaylist.tab.classList.remove('inSession')
-
-			player.linkPlaylist(playlists[id])
 		}
 	})
 	newPlTab.appendChild(loadunload)
@@ -1166,11 +1179,6 @@ function Player(opts) {
 	self.targetMediaElement = null
 	self.queue = []
 
-
-	self.linkedPlaylist = {}
-	if(opts.playlist)
-		self.linkedPlaylist = opts.playlist
-
 	self.autoInit = opts.autoInit
 	self.autoPlay = opts.autoPlay
 	self.autoDequeue = opts.autoDequeue
@@ -1181,9 +1189,6 @@ function Player(opts) {
 	self._playing = self.autoPlay
 	self._queueAt = 0
 	self._currentQueueItem = null
-
-	if (self.autoInit)
-		self.init()
 
 	// Controls
 	self._playpause = {}
@@ -1281,53 +1286,15 @@ function Player(opts) {
 	self.on('mute', util.log)
 
 }
-Player.prototype.init = function() {
+Player.prototype.dequeueAll = function(arr) {
 	var self = this
-	if(self.linkedPlaylist.id) {
-		self.queueAll(self.linkedPlaylist.playlist)
-	}
-}
-Player.prototype.resetQueue = function() {
-	var self = this
-	self.targetPlaylistDiv.innerHTML = ''
-	self.queue.forEach(function (item) {
-		self.queueItem(item)
+
+	arr.forEach(function (item) {
+		self.dequeueItem(item)
 	})
-}
-Player.prototype.linkPlaylist = function(playlist) {
-	var self = this
-
-	if(self.linkedPlaylist.id) {
-		self.linkedPlaylist.forEach(function (item) {
-			self.dequeueItem(item)
-		})
-	}
-
-	var plIds = self.queue.map(function(item) { return item.playlistItemId})
-	self.linkedPlaylist = playlist
-	self.linkedPlaylist.playlist.forEach(function (item) {
-		if(plIds.includes(item.playlistItemId))
-			self.dequeueItem(item)
-		self.queueItem(item)
-	})
-}
-Player.prototype.unlinkPlaylist = function() {
-	var self = this
-	if(self.linkedPlaylist.id) {
-
-		var plIds = self.queue.map(function(item) { return item.playlistItemId})
-
-		self.linkedPlaylist.playlist.forEach(function (item) {
-			if(plIds.includes(item.playlistItemId))
-				self.dequeueItem(item)
-		})
-
-		self.linkedPlaylist = {}
-	}
 }
 Player.prototype.queueAll = function(arr) {
 	var self = this
-	var arr
 
 	arr.forEach(function (item) {
 		self.queueItem(item)
@@ -1366,8 +1333,11 @@ Player.prototype.queueItem = function(playlistItem, index) {
 Player.prototype.dequeueItem = function(playlistItem) {
 	var self = this
 	var index = self.queue.indexOf(playlistItem)
-	self.queue.splice(index, 1)
-	self.emit('queueRemove', playlistItem, index)
+
+	if (index >= 0) {
+		self.queue.splice(index, 1)
+		self.emit('queueRemove', playlistItem, index)
+	}
 }
 Player.prototype.queueNext = function(index){
 	var self = this
@@ -1801,27 +1771,8 @@ Player.prototype.setTitle = function(queueItem) {
 		'<span class="songName">' + newTitle + '</span>' +
 		'<span class="upNext">[QUEUE]</span>'
 }
-Player.prototype.itemDownloading = function(queueItem) {
-	if(queueItem.queueId) {
-		var el = document.getElementById(queueItem.queueId)
-		if(el) {
-			el.classList.add('downloading')
-			el.classList.remove('added')
-		}
-	}
-}
-Player.prototype.itemSeeding = function(queueItem) {
-	if(queueItem.queueId) {
-		var el = document.getElementById(queueItem.queueId)
-		if(el) {
-			el.classList.add('seeding')
-			el.classList.remove('downloading')
-		}
-	}
-}
 
 player = new Player({
-	autoInit: true,
 	autoDequeue: false,
 	autoPlay: false,
 	targetMediaDiv: playerDiv,
@@ -1846,17 +1797,23 @@ function Session(opts) {
 	if (!(opts.client)) throw new Error('Torrent Client required')
 	if (!(opts.owner)) throw new Error('Session owner required')
 	if (!(opts.ownerAlias)) throw new Error('Session owner Name required')
-	if ((opts.playlist)){
-		self.playlist = opts.player.queue
-	} else {
-		self.playlist = []
+
+	self.playlist = []
+	// TODO Session Torrents - incase removed from Playlist but still in Queue
+	self.sessionTorrents = []
+
+	if (opts.player) {
+		// This is a local session
+		self.player = opts.player
+		self.playlist = self.player.queue
+
+	} else if (opts.playlist) {
+		self.playlist = opts.playlist
 	}
-	//if (!(opts.player)) throw new Error('Player required')
 
 	self.owner  = opts.owner
 	self.ownerAlias  = opts.ownerAlias
 	self.client = opts.client
-
 
 	self.peerSocket = {}
 	self.peers = {}
@@ -1903,12 +1860,12 @@ Session.prototype.startSession = function (player) {
 		var self = session
 		self.lastUpdated = new Date()
 
-		var payload = JSON.stringify(self, _replacer)
+		var payload = JSON.stringify(self, self._replacer)
 
 		//util.log('About to register session with server: ' + payload)
 		try {
 			get.concat({
-				url: 'http://' + sessionServer + ':8000/startsession',
+				url: 'http://' + sessionServer + ':'+ sessionServerPort + '/startsession',
 				method: 'POST',
 				body: payload,
 				headers: {'user-agent': 'WebTorrent/1.0 (https://webtorrent.io)'}
@@ -1935,16 +1892,6 @@ Session.prototype.startSession = function (player) {
 
 	var _onSessionError = function(err) { util.error(err) }
 
-	var _replacer = function(name, value) {
-		// Avoiding circular loops here
-		if (name.toLowerCase().indexOf('torrent') > -1) return undefined
-		else if (name.toLowerCase().indexOf('file') > -1) return undefined
-		else if (name.toLowerCase().indexOf('socket') > -1) return undefined
-		else if (name === 'client') return undefined
-
-		return value
-	}
-
 	var _sessionListeners = self.sessionListeners.bind(self)
 	getRtcConfig(_sessionListeners)
 
@@ -1966,21 +1913,30 @@ Session.prototype.addSourceMedia = function(items, cb) {
 		list = items
 
 	var _onTorrentSeeding = function(torrent) {
-		self.emit('playlistSeeding', self.playlist[torrent.files[0]])
+		list.forEach(function(item, i) {
+			if(item.hash === hash) {
+				item.state = 'downloading'
+				self.emit('playlistItemTorrentSeeding', item)
+			}
+		})
 	}
 
 	var _onPlaylistMeta = function(torrent) {
-		// Variables relating to state of the session, but only available AFTER the torrent has been seeded.
 
-		self.playlist[key] = list[key]
-		self.playlist[key].order = Object.keys(self.playlist).length + 1
-
-		var pl = Object.keys(self.playlist).length
 		var file = torrent.files[0]
+		var hash = torrent.infoHash
 
-		self.playlist[file.name].hash = torrent.infoHash
-		self.playlist[file.name].file = file
-		self.playlistTorrents[torrent.infoHash] = torrent
+
+		list.forEach(function(item, i) {
+			if(item.hash === hash) {
+				item.torrent = torrent
+				item.file = file
+				item.state = 'downloading'
+				self.emit('playlistItemTorrentLoading', item)
+			}
+		})
+
+		self.sessionTorrents[torrent.infoHash] = torrent
 
 		torrent.on('warning', util.warning)
 		torrent.on('error', util.error)
@@ -1990,19 +1946,10 @@ Session.prototype.addSourceMedia = function(items, cb) {
 
 	}
 
-	Object.keys(list.forEach(function(key) {
-		if (list[key].author === peerId && !self.playlistTorrents[list[key].hash])
-			self.client.seed(list[key].file, {createdBy: list[key].author}, _onPlaylistMeta)
-		else
-			self.client.add(list[key].file, _onPlaylistMeta)
+	list.forEach(function(key, i) {
+		self.client.add(list[i].hash, _onPlaylistMeta)
+	})
 
-	}))
-
-	//self.emit('playlistItemAdded', self.playlist[file.name])
-
-	if (typeof cb === 'function') {
-		cb(null, self.playlist[file.name], 'add')
-	}
 }
 
 Session.prototype.updateSourceMedia = function(items, cb) {
@@ -2122,7 +2069,7 @@ Session.prototype.endSession = function() {
 	function _destroySessionRegistry() {
 		try {
 			get.concat({
-				url: 'http://' + sessionServer + ':8000/endsession/' + self.id,
+				url: 'http://' + sessionServer + ':' + sessionServerPort + '/endsession/' + self.id,
 				method: 'GET',
 				headers: {'user-agent': 'WebTorrent/1.0 (https://webtorrent.io)'}
 			}, onResponse)
@@ -2176,7 +2123,7 @@ Session.prototype.joinSession = function (player) {
 						var offset = calculateOffset(responses)
 						util.userLog('Internal Clock offset is ' + offset + ' milliseconds')
 						self.offset = offset
-						self.registerNewPeer(self.owner, self.ownerAlias, true, conn)
+						self.registerNewPeer(self.owner, self.ownerAlias, conn, true, true)
 						conn.send({type: 'joinRequest'})
 					}
 				}
@@ -2191,7 +2138,7 @@ Session.prototype.joinSession = function (player) {
 
 			var conn = self.peerSocket.connect(self.owner, {metadata: {peerId: peerId, alias: screenName}})
 			conn.on('error', function(err) {
-				util.error('Ok eerror here ' + err)
+				util.error('Ok error here ' + err)
 			})
 			conn.on('open', newSessionConnection)
 		}
@@ -2204,7 +2151,9 @@ Session.prototype.joinSession = function (player) {
 		}
 	}
 
+	self.player = player
 	getRtcConfig(setupSKConnection)
+
 }
 
 Session.prototype.sessionListeners = function (err, rtcConfig) {
@@ -2233,11 +2182,12 @@ Session.prototype.sessionListeners = function (err, rtcConfig) {
 	}
 
 	var _onSessionPeerConnected = function(conn) {
+		util.log('Session Channel opened for peerId ' + conn.metadata.peerId)
 		self.registerNewConnection(conn.metadata.peerId, conn)
 	}
 
 	var _onSessionChannelClosed = function() {
-		//util.log('Session Channel closed properly.')
+		util.log('Session Channel closed properly.')
 	}
 
 	var _onSessionChannelDisconnected = function() { util.error('Session P2P Channel disconnected. What to do...??') }
@@ -2272,24 +2222,25 @@ Session.prototype._onSessionMessage = function(conn, msg) {
 			var beepTestTime = (new Date().getTime()) + 3000
 			conn.send({type : 'beepTest', at: beepTestTime})
 			setTimeout(function() {
-				beepTest.play()
+				//beepTest.play()
 				util.userCommand('Playing beep test')
 			}, (beepTestTime - (new Date().getTime())))
 			util.userCommand('Beep testing at ' + beepTestTime + ' (local)')
 			break
 		case 'beepTest' :
 			setTimeout(function() {
-				beepTest.play()
+				//beepTest.play()
 				util.userCommand('Playing beep test')}, ((msg.at - self.offset) - (new Date().getTime())))
 			util.userCommand('beep testing at ' + (msg.at + self.offset) + ' milli (offset = ' + self.offset+ ')')
 			break
 		case 'joinRequest' :
 			if (self.isKing()) {
-				self.registerNewPeer(conn.metadata.peerId, conn.metadata.alias, false, conn, false)
+				self.registerNewPeer(conn.metadata.peerId, conn.metadata.alias, conn, false, false)
 				conn.send({
 					approved: true,
-					peers: omit(self.peers, 'socket', true, true),
-					playlist: omit(self.playlist, 'file', true, true),
+					session: JSON.parse(JSON.stringify(self, self._replacer)),
+					//peers: omit(self.peers, 'socket', true, true),
+					//playlist: omit(self.playlist, 'file', true, true),
 					type: 'inSession'
 				})
 				self.emit('addPeer', conn.metadata)
@@ -2301,34 +2252,32 @@ Session.prototype._onSessionMessage = function(conn, msg) {
 			break
 		case 'inSession' :
 			if (msg.approved) {  // For you
+
 				self.peers[peerId] = {peerId: peerId, alias: screenName, king: false, me: true, socket: {}}
 				self.emit('joined', self)
 				self.emit('addPeer', self.peers[self.owner])
 				self.emit('addPeer', self.peers[peerId])
-				//conn.send({type: 'beepTestRequest'})
-				if (msg.playlist) {
-					self.addSourceMedia(msg.playlist)
-				}
+
+				Object.keys(msg.session.peers).forEach(function (key) {
+					if (!self.peers[key]) {
+						self.registerNewPeer(key, msg.session.peers[key].alias)
+						self.emit('addPeer', self.peers[key])
+					}
+				})
+				Object.keys(self.peers).forEach(function (key) {
+					if (!msg.session.peers[key]) {
+						self.emit('removePeer', self.peers[key])
+						delete self.peers[key]
+					}
+				})
+
+				self.addSourceMedia(msg.session.playlist)
+
 			} else if (msg.peerId) {
 				if (!self.peers[msg.peerId]) {
 					self.registerNewPeer(msg.peerId, msg.alias)
 					self.emit('addPeer', msg)
 				}
-			}
-
-			if (msg.peers) {
-				Object.keys(msg.peers).forEach(function (key) {
-					if (!self.peers[key]) {
-						self.registerNewPeer(key, msg.peers[key].alias)
-						self.emit('addPeer', self.peers[key])
-					}
-				})
-				Object.keys(self.peers).forEach(function (key) {
-					if (!msg.peers[key]) {
-						self.emit('removePeer', self.peers[key])
-						delete self.peers[key]
-					}
-				})
 			}
 			break
 		case 'outSession' :
@@ -2401,13 +2350,16 @@ Session.prototype.broadCastAll = function(msg, excluded) {
 	})
 }
 
-Session.prototype.registerNewPeer = function(id, alias, isKing, conn, connAlready) {
+Session.prototype.registerNewPeer = function(id, alias, conn, isKing, registerConnection) {
 	var self = this
 	util.log('New Peer registered: ' + alias + ', ID' + id)
+
 	self.peers[id] = {peerId : id, alias: alias, king: isKing ? isKing : false, socket : conn ? conn : {}}
 	self.peerCount = Object.keys(self.peers).length
-	if (conn && connAlready !== true)
+	if (conn && registerConnection === true) {
+		util.log('New Peer connection registering: ' + alias + ', ID' + id + ' conn = ' + conn + ', registerConnection = ' + registerConnection)
 		self.registerNewConnection(id, conn)
+	}
 }
 
 Session.prototype.registerNewConnection = function(targetPeerId, conn, deregister) {
@@ -2421,7 +2373,7 @@ Session.prototype.registerNewConnection = function(targetPeerId, conn, deregiste
 	}
 
 	var connOpened = function(){
-		//util.log('Channel with \'' + targetPeerId + '\' opened')
+		util.log('Channel with \'' + targetPeerId + '\' opened')
 	}
 	var connData = function (data) {
 		if (data.type === 'syncRequest') {
@@ -2447,12 +2399,24 @@ Session.prototype.registerNewConnection = function(targetPeerId, conn, deregiste
 		util.error('Session P2P Connection error: ' + err)
 	}
 
-	util.log('New Peer connecting: ' + conn.metadata.alias + ', ID' + conn.metadata.peerId)
+	util.log('New Peer connection registered: ' + conn.metadata.alias + ', ID' + conn.metadata.peerId)
 	conn.on('open', connOpened)
 	conn.on('data', connData)
 	conn.on('close', connClosed)
 	conn.on('error', util.error)
 
+}
+
+Session.prototype._replacer = function(name, value) {
+	// Avoiding circular loops here
+	if (typeof name == 'function') return undefined
+	else if (name.toLowerCase().indexOf('torrent') > -1) return undefined
+	else if (name.toLowerCase().indexOf('file') > -1) return undefined
+	else if (name.toLowerCase().indexOf('socket') > -1) return undefined
+	else if (name === 'client') return undefined
+	else if (name === 'player') return undefined
+
+	return value
 }
 
 
